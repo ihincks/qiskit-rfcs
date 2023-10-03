@@ -75,6 +75,30 @@ ObservablesTask = NamedTuple[
 
 We expect the formal primitive API and primitive implementations to have a strong sense of Tasks, but we will not demand that users construct them manually in Python as they are little more than named tuples, and we do not wish to overburden them with types. This is discussed further in the “Type Coersion” section.
 
+### BindingsArray
+
+It is common for a user to want to do a sweep over parameter values, that is, to execute the same parametric circuit with many different parameter binding sets. `BindingsArray` specifies multiple sets of parameters that can be bound to a circuit. For example, if a circuit has 200 parameters, and a user wishes to execute the circuit for 50 different sets of values, then a single instance of `BindingsArray` could represent 50 sets of 200 parameter values. Moreover, it is array-like (see the next section), so in this example the `BindingsArray` instance would be one-dimensional and have shape equal `(50,)`. 
+
+We expect the formal primitive API and primitive implementations to have a strong sense of `BindingsArray`, but we will not demand that users construct them manually because we do not wish to overburden them with types, and we need to remain backwards compatible. This is discussed further in the "Type Coersion" and "Migration Path" sections.
+
+The "BindingsArray" object will support, at a minimum, the following constructor examples for a circuit with three input parameters `a`, `b`, and `c`, where we will use `<>` to denote some `array_like` of the specified shape:
+
+```python
+# specify all 50 binding parameter sets in one big array
+BindingsArray(<50, 3>) 
+
+# specify bindings separately for each parameter, required if they have different types
+BindingsArray([<50>, <50>, <50>]) 
+
+# include parameter names with the arrays, where parameters can be grouped together in tuples, or supplied separately
+BindingsArray(kwargs={(a, c): <50, 2>, b: <50>}) 
+
+# “args” and “kwargs” can be mixed
+BindingsArray(<50, 2>, {c: <50>}) 
+```
+
+Note that `BindingsArray` is somewhat constrained by how `Parameters` currently work in Qiskit, namely, there is no support for array-valued inputs in the same way that there is in OpenQASM 3; `BindingsArray` assumes that every parameter represents a single number like a `float` or an `int`.
+
 ## Detailed Design
 Technical reference level design. Elaborate on details such as:
 - Implementation procedure
