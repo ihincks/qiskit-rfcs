@@ -63,17 +63,17 @@ For example, a circuit with unbound parameters (or in OQ3 terms, a circuit with 
 BaseTask = NamedTuple[circuit: QuantumCircuit]
 ```
 
-Both the Estimator and the Sampler support `parameter_values` as an argument in their run method. Therefore their respective `Task`s must, at the minimum, include a way of specifying parameter binding values. We introduce the `BindingsArray` type, described later, for this purpose. Further, the `Estimator` requires observables to execute, hence also `ObservablesArray`.
+For the `Estimator` primitive, in order to satisfy the definition as stated above, we propose the task structure
 
 ```python
-# Task type suitable for Sampler.run
-BaseTask > ArrayTask = Tuple[CircuitType, BindingsArray] 
-
-# Task type suitable Estimator.run
-ArrayTask > ObservablesTask = Tuple[CircuitType, BindingsArray, ObservablesArray] 
+ObservablesTask = NamedTuple[
+    circuit: QuantumCircuit, 
+    parameter_values: BindingsArray, 
+    observables: ObservablesArray
+]
 ```
 
-We expect the formal primitive API and primitive implementations to have a strong sense of `Task`s, but we will not demand that users construct them manually in Python as they are little more than named tuples, and we do not wish to overburden them with types. This is discussed further in the "Type Coercion" section.
+We expect the formal primitive API and primitive implementations to have a strong sense of Tasks, but we will not demand that users construct them manually in Python as they are little more than named tuples, and we do not wish to overburden them with types. This is discussed further in the “Type Coersion” section.
 
 ### BindingsArray
 
