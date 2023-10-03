@@ -107,6 +107,43 @@ Technical reference level design. Elaborate on details such as:
 - Dissecting corner cases
 - Reference definition, eg., formal definitions.
 
+## Migration Path
+
+We need to remain backwards compatible with the existing interface to adhere to the [Qiskit Deprecation Policy](https://qiskit.org/documentation/deprecation_policy.html). Notice that for both `Sampler` and `Estimator`, the first argument of the `run()` call will either contain `Tasks` (or `TaskLike`s) or it won’t.
+
+We propose a migration strategy based on this: If the user has provided no `TaskLike`s, proceed with the old API and old API output and emit a deprecation warning, or an error if something mandatory like `observables` has been omitted. Otherwise, proceed with the new API, raising if they have tried to use the old arguments in addition to providing tasks.
+
+```python
+def run(
+        self,
+        circuits: Sequence[QuantumCircuit] | QuantumCircuit,
+        observables: Sequence[BaseOperator | PauliSumOp | str] | BaseOperator | PauliSumOp | str,
+        parameter_values: Sequence[Sequence[float]] | Sequence[float] | float | None = None,
+        **run_options,
+    )
+```
+
+```python
+def run(self, tasks, observables=None, parameter_values=None, **run_options):
+    has_tasks = isinstance(tasks, QuantumCircuit) or all(isinstance(task, QuantumCircuit) for task in tasks)
+
+    if not has_tasks:
+        # Trigger old API and disallow new one
+        if not all_circuits:
+            raise ValueError("Cannot mix and match old API with new API")
+
+        if observables is None:
+            raise ValueError("`observables` is required argument in the old API")
+
+        circuits = [tasks] if isinstance(tasks, QuantumCircuit) else tasks
+        observables = [observables] is isinstance(observables, (BaseOperator, PauliSumOp, str)) else observables
+        tasks = zip(circuits, observables, parameter_values)
+        warnings.warn(<deprecation>)
+    tasks = ObservableTask.coerce(task) for task in tasks
+
+    return self._run_old_api(...) if no_tasks else return self._run(...)
+```
+
 ## Alternative Approaches
 
 An alternative is to consider letting the `run()` method accept, effectively, only a single `ObservablesTask`:
