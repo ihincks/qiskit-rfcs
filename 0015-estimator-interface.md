@@ -146,7 +146,7 @@ job = estimator.run((circuit, parameter_values, observables))
 
 job.result()
 
->> [ResultBundle<{evs: ndarray<9, 32>, stds: ndarray<9, 32>, metadata}>]
+>> [ResultBundle<{evs: ndarray<9, 32>, stds: ndarray<9, 32>}>, metadata]
 
 Sampler.run(Union[Iterable[ArrayTask<shape_i], ArrayTask]) -> List[ResultBundle[{creg_name: CountsArray}]]
 ```
@@ -186,13 +186,29 @@ In particular, we propose this kind of Coercion for the types:
 * `BindingsArray`
 * `ObservablesArray`
 
+### ResultBundles
+
+The results from each `Task` will be array valued. However, we may require several arrays, possibly of different types. Consider an `ObservablesTask` with shape `<20, 30>`, where the shape has come from some combination of multiplexing an observables sweep with a parameter values sweep. This will result in a 20×30 array of real estimates. Moreover, we will want to return an array of standard deviations of the same shape. This would result in a bundle of broadcastable arrays:
+
+```python
+ResultBundle({“evs”: <20, 30>, “stds”: <20, 30>}, metadata)
+```
+
+The reason we are proposing a generic container for the return type instead of, e.g., an `Estimator`-specific container, is because
+
+1. Provides unified experience across primitives for users. 
+1. code-reuse
+1. Provides a certain certain amount of flexibility for what can be returned without modifying the container object. Here are some examples:
+  1. Suppose that we want to give users the option of additionally returning the covariances between estimates that arise because of the circuit multiplexing, then we could update with the field `{"cov": <20,30,20,30>}`.
+  1. Suppose we want to return some indication of which estimates came from the same physical circuit.
+
 ## Detailed Design
 Technical reference level design. Elaborate on details such as:
 - Implementation procedure
   - If spans multiple projects cover these parts individually
 - Interaction with other features
 - Dissecting corner cases
-- Reference definition, eg., formal definitions.
+- Reference definition, e.g., formal definitions.
 
 ## Migration Path
 
