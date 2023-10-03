@@ -73,13 +73,13 @@ ObservablesTask = NamedTuple[
 ]
 ```
 
-We expect the formal primitive API and primitive implementations to have a strong sense of Tasks, but we will not demand that users construct them manually in Python as they are little more than named tuples, and we do not wish to overburden them with types. This is discussed further in the “Type Coersion” section.
+We expect the formal primitive API and primitive implementations to have a strong sense of Tasks, but we will not demand that users construct them manually in Python as they are little more than named tuples, and we do not wish to overburden them with types. This is discussed further in the “Type Coercion” section.
 
 ### BindingsArray
 
 It is common for a user to want to do a sweep over parameter values, that is, to execute the same parametric circuit with many different parameter binding sets. `BindingsArray` specifies multiple sets of parameters that can be bound to a circuit. For example, if a circuit has 200 parameters, and a user wishes to execute the circuit for 50 different sets of values, then a single instance of `BindingsArray` could represent 50 sets of 200 parameter values. Moreover, it is array-like (see the next section), so in this example the `BindingsArray` instance would be one-dimensional and have shape equal `(50,)`. 
 
-We expect the formal primitive API and primitive implementations to have a strong sense of `BindingsArray`, but we will not demand that users construct them manually because we do not wish to overburden them with types, and we need to remain backwards compatible. This is discussed further in the "Type Coersion" and "Migration Path" sections.
+We expect the formal primitive API and primitive implementations to have a strong sense of `BindingsArray`, but we will not demand that users construct them manually because we do not wish to overburden them with types, and we need to remain backwards compatible. This is discussed further in the "Type Coercion" and "Migration Path" sections.
 
 The "BindingsArray" object will support, at a minimum, the following constructor examples for a circuit with three input parameters `a`, `b`, and `c`, where we will use `<>` to denote some `array_like` of the specified shape:
 
@@ -151,7 +151,7 @@ job.result()
 Sampler.run(Union[Iterable[ArrayTask<shape_i], ArrayTask]) -> List[ResultBundle[{creg_name: CountsArray}]]
 ```
 
-### Type Coersion Strategy
+### Type Coercion Strategy
 
 To minimize the number of container types that an every-day user will need to interact with, and to make the transition more seamless, we propose that several container types be associated with a `TypeLike` pattern and a static method
 
@@ -180,7 +180,7 @@ def coerce(bindings_array: BindingsArrayLike) -> BindingsArray:
     return bindings_array
 ```
 
-In particular, we propose this kind of coersion for the types:
+In particular, we propose this kind of Coercion for the types:
 * `ArrayTask`
 * `ObservablesTask`
 * `BindingsArray`
