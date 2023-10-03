@@ -243,16 +243,16 @@ Technical reference level design. Elaborate on details such as:
 
 ## Migration Path <a name="migration-path"></a>
 
-We need to remain backwards compatible with the existing interface to adhere to the [Qiskit Deprecation Policy](https://qiskit.org/documentation/deprecation_policy.html). Notice that for both `Sampler` and `Estimator`, the first argument of the `run()` call will either contain `Tasks` (or `TaskLike`s) or it won’t.
+We need to remain backwards compatible with the existing interface to adhere to the [Qiskit Deprecation Policy](https://qiskit.org/documentation/deprecation_policy.html).
 
-We propose a migration strategy based on this: If the user has provided no `TaskLike`s, proceed with the old API and old API output and emit a deprecation warning, or an error if something mandatory like `observables` has been omitted. Otherwise, proceed with the new API, raising if they have tried to use the old arguments in addition to providing tasks.
+In summary, we propose the following strategy: If the user has provided no `TaskLike`s, proceed with the old API, the old API output, and emit a deprecation warning, or an error if something mandatory like `observables` has been omitted. Otherwise, proceed with the new API, raising if they have tried to use the old arguments in addition to providing tasks.
 
-The current `Estimator.run` has `circuits` as the only positional argument and accepts `observables` and `parameter_values` as keyword arguments (in addition to the var keyword `**run_options` arguments):
+We now describe the strategy in detail, beginning with a restatement of the current interface, where `Estimator.run` has `circuits` as the only positional argument and accepts `observables` and `parameter_values` as keyword arguments (in addition to the var keyword `**run_options` arguments which isn't affected):
 
 ```python
 class Estimator(BasePrimitive):
 
-    # Current Signature for Estimator.run
+    # current signature
     def run(
             self,
             circuits: Sequence[QuantumCircuit] | QuantumCircuit,
@@ -263,18 +263,18 @@ class Estimator(BasePrimitive):
         ...
 ```
 
-Migrating to using `Task`s would be relatively straightforward, broken into two phases.
+We propose the migration to using tasks in two phases.
 
 ### Deprecation Phase 1
 
-In the first phase, the necessary steps are:
+In the first phase:
 * Introduce `tasks: Sequence[ObservablesTask] | ObservablesTask` as the only positional argument, and make `circuits` a keyword argument.
 * Coerce the arguments to account for the fact that the only existing positional argument is `circuit: Sequence[QuantumCircuit] | QuantumCircuit`.
 * Check that the user does not attempt to mix the old/new APIs.
 * If necessary, coerce the old-API arguments (now all keyword arguments) into `ObservableTask`s, **raise deprecation warning**.
-* Run `Estimator._run(tasks: Sequence[ObservablesTask], **run_options)`.
+* Always eventually run with `Estimator._run(tasks: Sequence[ObservablesTask], **run_options)`.
 
-This is mock-implemented here:
+Here is a mock implementation:
 ```python
 class Estimator(BasePrimitive):
 
