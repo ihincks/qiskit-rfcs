@@ -66,11 +66,11 @@ BaseTask = NamedTuple[circuit: QuantumCircuit]
 For the `Estimator` primitive, in order to satisfy the definition as stated above, we propose the task structure
 
 ```python
-ObservablesTask = NamedTuple[
+class ObservablesTask(NamedTuple):
+
     circuit: QuantumCircuit, 
     parameter_values: BindingsArray, 
     observables: ObservablesArray
-]
 ```
 
 We expect the formal primitive API and primitive implementations to have a strong sense of Tasks, but we will not demand that users construct them manually in Python as they are little more than named tuples, and we do not wish to overburden them with types. This is discussed further in [Type Coersion Strategy](#type-coercion-strategy).
