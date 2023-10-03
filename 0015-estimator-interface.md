@@ -99,6 +99,34 @@ BindingsArray(<50, 2>, {c: <50>})
 
 Note that `BindingsArray` is somewhat constrained by how `Parameters` currently work in Qiskit, namely, there is no support for array-valued inputs in the same way that there is in OpenQASM 3; `BindingsArray` assumes that every parameter represents a single number like a `float` or an `int`.
 
+### ObservablesArray
+
+With the `Estimator`, it is common for a user to want to estimate many observables of a single circuit. For example, all weight-1 and weight-2 Paulis that are adjacent on the connectivity graph. For a one-hundred qubit device, this corresponds to hundreds of unique estimates to be made for a single circuit, noting that for this particular example, on the heavy-hex graph, in the absence of mitigation, only 9 circuits need to be physically run.
+
+The `ObservablesArray` object will be an object array, where each element corresponds to a observable the user wants an estimated expectation value of. It is up to an `Estimator` implementation to solve a graph coloring problem to decide how to produce a sufficient set of physical circuits that are capable of producing data to make each of these estimates.
+
+### Arrays and Broadcasting
+
+An `nd-array` is an object whose elements are indexed by a tuple of integers, where each integer must be bounded by the dimension of that axis. The tuple of dimensions, one for each axis, is called the shape of the `nd-array`. For example, 1D list of 10 objects (typically numbers) is a vector and has shape `(10,)`; a matrix with 5 rows and 2 columns is 2D and has shape `(5, 2)`; a single number is 0D and has an empty shape tuple `()`; an `nd-array` with shape (20, 10, 5) can be interpreted as a length-20 list of 10×5 matrices.
+
+```python
+shape1=(1, 5), shape2=(4, 1), broadcasted_shape=(4,5)
+
+shape1=(1, 5), shape2=(4, 1), broadcasted_shape=(4,5)
+
+shape1=(), shape2=(5, 10), broadcasted_shape=(5,10)
+```
+
+FAQ1: Why make `BindingArrays` `nd`, and not just `list`-like? 
+
+* A1: The primitives are meant to be a convenient execution framework, and allowing multiple axes relieves certain book-keeping burdens from the caller. `nd-arrays` are a standard construct in data manipulation. Different axes can be assigned different operational meanings, for example axis 0 could be a sweep over basis transformations, and axis 1 could be a sweep over Pauli randomizations.
+
+* A2: There are different places in the runtime stack that binding can occur. in the runtime container, as a fast parametric. Having multiple axes gives us the freedom to offer this as an explicit feature in the future (?).
+
+* A3: It lets us specify certain common scenarios for `ObservablesTask` more efficiently. For example, suppose we want one axis to represent twirling variates, and the other axis to represent observable bases. Then, via broadcasting, described below, the information that needs to be transferred over the wire appears 1D  for both the twirling variate phase information and the list of observables. Without `nd-array` support, broadcasting would have to be done client-side.
+
+We propose that any subtype of `ArrayTask` use broadcasting rules on auxillary data.
+
 ## Detailed Design
 Technical reference level design. Elaborate on details such as:
 - Implementation procedure
