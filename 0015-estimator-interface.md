@@ -117,21 +117,21 @@ parameter_values = np.array(1.0)
 parameter_values.shape == ()
 observables = ObservablesArray([Pauli("III"), Pauli("XXX"), Pauli("YYY"), Pauli("ZZZ"), Pauli("XYZ")])
 observables.shape == (5,)
--> result_bundle.shape == (5,)
+>> result_bundle.shape == (5,)
 
 # Inner/Zip
 parameter_values = BindingsArray(np.random.uniform(size=(5,)))
 parameter_values.shape == (5,)
 observables = ObservablesArray([[Pauli("III")], [Pauli("XXX")], [Pauli("YYY")], [Pauli("ZZZ")], [Pauli("XYZ")]])
 observables.shape == (5,1)
--> result_bundle.shape == (5,)
+>> result_bundle.shape == (5,)
 
 # Outer/Product
 parameter_values = BindingsArray(np.random.uniform(size=(1,6)))
 parameter_values.shape == (1,6)
 observables = ObservablesArray([[Pauli("III"), Pauli("XXX"), Pauli("YYY"), Pauli("ZZZ"), Pauli("XYZ"), Pauli("IIZ")]])
 observables.shape == (4,1)
--> result_bundle.shape == (4,6)
+>> result_bundle.shape == (4,6)
 
 # Standard nd generalization
 parameter_values = BindingsArray(np.random.uniform(size=(3,6)))
@@ -142,7 +142,7 @@ observables = ObservablesArray([
     [[Pauli(...), Pauli(...)]]
 ])
 observables.shape == (3,1,2)
--> result_bundle.shape == (3,2,6)
+>> result_bundle.shape == (3,2,6)
 
 ```
 
