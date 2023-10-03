@@ -255,11 +255,13 @@ An alternative is to consider letting the `run()` method accept, effectively, on
 Estimator.run(cirucuit, parameter_values_array, observables_array)
 ```
 
-This has the advantage of a simpler interface, where multiple tasks could be run 
-by invoking the estimator multiple times. The disadvantages, which we feel are significant enough to forego this simplification, are that:
+* Advantages
+  * The main advantage of accepting a single task per run call is simplicity of the interface. This is done while maintaining the ability to do sweeps over observables and parameter bindings, where multiple tasks could be run by invoking the estimator multiple times.
+* Disadvantages
+  * For real backends, the user would lose the ability to cause multiple types of circuits to be loaded into the control hardware at one time. For example, if using an estimator to perform randomized benchmarking, each circuit depth would need to be a separate job.
+  * It would be difficult for implementations that include mitigation to share resources between tasks. For example, if different tasks represent different trotter step counts, there would need to be a complicated mechanism to share learning resources -- that are specific to the application circuits -- between multiple jobs.
 
- 1. For real backends, the user would lose the ability to cause multiple types of circuits to be loaded into the control hardware at one time. For example, if using an estimator to perform randomized benchmarking, each circuit depth would need to be a separate job.
- 2. It would be difficult for implementations that include mitigation to share resources between tasks. For example, if different tasks represent different trotter step counts, there would need to be a complicated mechanism to share learning resources---that are specific to the application circuits---between multiple jobs.
+We feel that the disadvantages are significant enough to forego this simplification.
 
 ## Questions
 Open questions for discussion and an opening for feedback.
