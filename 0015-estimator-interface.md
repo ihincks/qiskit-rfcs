@@ -117,6 +117,8 @@ shape1=(1, 5), shape2=(4, 1), broadcasted_shape=(4,5)
 shape1=(), shape2=(5, 10), broadcasted_shape=(5,10)
 ```
 
+<img src="./0015-estimator-interface/broadcasting.svg" style="width: 6in">
+
 FAQ1: Why make `BindingArrays` `nd`, and not just `list`-like? 
 
 * A1: The primitives are meant to be a convenient execution framework, and allowing multiple axes relieves certain book-keeping burdens from the caller. `nd-arrays` are a standard construct in data manipulation. Different axes can be assigned different operational meanings, for example axis 0 could be a sweep over basis transformations, and axis 1 could be a sweep over Pauli randomizations.
