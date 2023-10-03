@@ -109,7 +109,7 @@ def run(self, tasks, observables=None, parameter_values=None, **run_options):
             raise ValueError("Cannot mix and match old API with new API")
 
         if observables is None:
-            raise ValueError("Observables is required argument in the old API")
+            raise ValueError("`observables` is required argument in the old API")
 
         circuits = [tasks] if isinstance(tasks, QuantumCircuit) else tasks
         observables = [observables] is isinstance(observables, (BaseOperator, PauliSumOp, str)) else observables
