@@ -247,9 +247,8 @@ We need to remain backwards compatible with the existing interface to adhere to 
 
 We propose a migration strategy based on this: If the user has provided no `TaskLike`s, proceed with the old API and old API output and emit a deprecation warning, or an error if something mandatory like `observables` has been omitted. Otherwise, proceed with the new API, raising if they have tried to use the old arguments in addition to providing tasks.
 
-**In this section `arg` refers specifically to non-`kwarg` arguments.**
+The current `Estimator.run` has `circuits` as the only positional argument and accepts `observables` and `parameter_values` as keyword arguments (in addition to `**run_options`):
 
-The current `Estimator.run` has `circuits` as the only `arg` and accepts `observables` and `parameter_values` as `kwarg`s (in addition to `**run_options`):
 ```python
 class Estimator(BasePrimitive):
 
@@ -269,10 +268,10 @@ Migrating to using `Task`s would be relatively straightforward, broken into two 
 ### Deprecation Phase 1
 
 In the first phase, the necessary steps are:
-* Introduce `tasks: Sequence[ObservablesTask] | ObservablesTask` as the only `arg`, and make `circuits` a `kwarg`.
-* Coerce the arguments to account for the fact that the only existing `arg` is `circuit: Sequence[QuantumCircuit] | QuantumCircuit`.
+* Introduce `tasks: Sequence[ObservablesTask] | ObservablesTask` as the only positional argument, and make `circuits` a keyword argument.
+* Coerce the arguments to account for the fact that the only existing positional argument is `circuit: Sequence[QuantumCircuit] | QuantumCircuit`.
 * Check that the user does not attempt to mix the old/new APIs.
-* If necessary, coerce the old-API arguments (now all `kwarg`s) into `ObservableTask`s, **raise deprecation warning**.
+* If necessary, coerce the old-API arguments (now all keyword arguments) into `ObservableTask`s, **raise deprecation warning**.
 * Run `Estimator._run(tasks: Sequence[ObservablesTask], **run_options)`.
 
 This is mock-implemented here:
@@ -371,3 +370,5 @@ class BasePrimitive(ABC, Generic[T]):
     def run(self, T | Iterable[T], **options) -> List[ResultBundle]:
         ...
 ```
+
+The use of `T` as a positional argument in `BasePrimitive.run()` here will benefit from the interface changes described in the [Migration Path](#migration-path) and [Primitive Interface](#primitive-interface) sections.
