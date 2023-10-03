@@ -117,7 +117,7 @@ shape1=(1, 5), shape2=(4, 1), broadcasted_shape=(4,5)
 shape1=(), shape2=(5, 10), broadcasted_shape=(5,10)
 ```
 
-<img src="./0015-estimator-interface/broadcasting.svg" style="width: 6in">
+<img src="./0015-estimator-interface/broadcasting.svg">
 
 FAQ1: Why make `BindingArrays` `nd`, and not just `list`-like? 
 
