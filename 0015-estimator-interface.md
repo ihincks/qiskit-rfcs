@@ -247,7 +247,7 @@ We need to remain backwards compatible with the existing interface to adhere to 
 
 We propose a migration strategy based on this: If the user has provided no `TaskLike`s, proceed with the old API and old API output and emit a deprecation warning, or an error if something mandatory like `observables` has been omitted. Otherwise, proceed with the new API, raising if they have tried to use the old arguments in addition to providing tasks.
 
-The current `Estimator.run` has `circuits` as the only positional argument and accepts `observables` and `parameter_values` as keyword arguments (in addition to `**run_options`):
+The current `Estimator.run` has `circuits` as the only positional argument and accepts `observables` and `parameter_values` as keyword arguments (in addition to the var keyword `**run_options` arguments):
 
 ```python
 class Estimator(BasePrimitive):
