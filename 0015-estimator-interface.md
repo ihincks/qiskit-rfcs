@@ -247,35 +247,99 @@ We need to remain backwards compatible with the existing interface to adhere to 
 
 We propose a migration strategy based on this: If the user has provided no `TaskLike`s, proceed with the old API and old API output and emit a deprecation warning, or an error if something mandatory like `observables` has been omitted. Otherwise, proceed with the new API, raising if they have tried to use the old arguments in addition to providing tasks.
 
+**In this section `arg` refers specifically to non-`kwarg` arguments.**
+
+The current `Estimator.run` has `circuits` as the only `arg` and accepts `observables` and `parameter_values` as `kwarg`s (in addition to `**run_options`):
 ```python
-def run(
-        self,
-        circuits: Sequence[QuantumCircuit] | QuantumCircuit,
-        observables: Sequence[BaseOperator | PauliSumOp | str] | BaseOperator | PauliSumOp | str,
-        parameter_values: Sequence[Sequence[float]] | Sequence[float] | float | None = None,
-        **run_options,
-    )
+class Estimator(BasePrimitive):
+
+    # Current Signature for Estimator.run
+    def run(
+            self,
+            circuits: Sequence[QuantumCircuit] | QuantumCircuit,
+            observables: Sequence[BaseOperator | PauliSumOp | str] | BaseOperator | PauliSumOp | str,
+            parameter_values: Sequence[Sequence[float]] | Sequence[float] | float | None = None,
+            **run_options,
+        ):
+        ...
 ```
 
+Migrating to using `Task`s would involve deprecating this behavior in XXX phases.
+
+### Deprecation Phase 1
+
+In the first phase, the necessary steps are:
+* Introduce `tasks: Sequence[ObservablesTask] | ObservablesTask` as the only `arg`, and make `circuits` a `kwarg`.
+* Coerce the arguments to account for the fact that the only existing `arg` is `circuit: Sequence[QuantumCircuit] | QuantumCircuit`.
+* Check that the user does not attempt to mix the old/new APIs.
+* If necessary, coerce the old-API arguments (now all `kwarg`s) into `ObservableTask`s, **raise deprecation warning**.
+* Run `Estimator._run(tasks: Sequence[ObservablesTask], **run_options)`.
+
+This is mock-implemented here:
 ```python
-def run(self, tasks, observables=None, parameter_values=None, **run_options):
-    has_tasks = isinstance(tasks, QuantumCircuit) or all(isinstance(task, QuantumCircuit) for task in tasks)
+class Estimator(BasePrimitive):
 
-    if not has_tasks:
-        # Trigger old API and disallow new one
-        if not all_circuits:
-            raise ValueError("Cannot mix and match old API with new API")
+    def run(
+        self, 
+        tasks: Sequence[ObservablesTask] | ObservablesTask, 
+        circuits = None,
+        observables = None, 
+        parameter_values = None, 
+        **run_options
+        ):
+        # Coerce into standard form to later allow for `tasks` to be the only non-kwarg.
+        if isinstance(tasks, QuantumCircuit) or all(isinstance(task, QuantumCircuit) for task in tasks):
+            circuits = tasks
+            tasks = None
 
-        if observables is None:
-            raise ValueError("`observables` is required argument in the old API")
+        # Do not mix new/old API
+        if tasks and (circuits or observables or parameter_values):
+            raise ValueError("Cannot mix old and new APIs")
 
-        circuits = [tasks] if isinstance(tasks, QuantumCircuit) else tasks
-        observables = [observables] is isinstance(observables, (BaseOperator, PauliSumOp, str)) else observables
-        tasks = zip(circuits, observables, parameter_values)
-        warnings.warn(<deprecation>)
-    tasks = ObservableTask.coerce(task) for task in tasks
+        # Deprecated path
+        if tasks is None:
+            # Verify values in old API
+            if not (circuits and observables):
+                raise ValueError(f"Need both circuits and observables for old API, got circuits={circuits}, observables={observables}")
+            
+            # Coerce into old form
+            if parameter_values is None:
+                parameter_values = itertools.repeat(None)
+            if isinstance(circuit, QuantumCircuit):
+                circuit = [circuit]
+            if isinstance(observables, (BaseOperator, PauliSumOp, str)):
+                observables = [observables]
 
-    return self._run_old_api(...) if no_tasks else return self._run(...)
+            # Coerce old form into `ObservablesTask`s
+            tasks = [ObservablesTask.coerce(task) for task in zip(circuits, observables, parameter_values)]
+            warnings.warn("Deprecated API use")
+        
+        # Coerce into sequence form
+        if isinstance(tasks, ObservablesTasks):
+            tasks = [tasks]
+        
+        # Run using only tasks
+        return self._run(tasks, **run_options)
+```
+
+### Deprecation Phase 2
+
+After the deprecation period, everything except the `Estimator._run` call and some minor coercion (unrelated to this RFC) are necessary.
+
+```python
+class Estimator(BasePrimitive):
+
+    def run(
+        self, 
+        tasks: Sequence[ObservablesTask] | ObservablesTask, 
+        **run_options
+        ):
+        # Coerce into sequence form
+        if isinstance(tasks, ObservablesTasks):
+            tasks = [tasks]
+        
+        # Run using only tasks
+        return self._run(tasks, **run_options)
 ```
 
 ## Alternative Approaches <a name="alternative-approaches"></a>
