@@ -264,7 +264,7 @@ class Estimator(BasePrimitive):
         ...
 ```
 
-Migrating to using `Task`s would involve deprecating this behavior in XXX phases.
+Migrating to using `Task`s would be relatively straightforward, broken into two phases.
 
 ### Deprecation Phase 1
 
