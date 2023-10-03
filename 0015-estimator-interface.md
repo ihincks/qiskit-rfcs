@@ -127,6 +127,65 @@ FAQ1: Why make `BindingArrays` `nd`, and not just `list`-like?
 
 We propose that any subtype of `ArrayTask` use broadcasting rules on auxillary data.
 
+### Primitive Interface
+
+We use the (non-standard) notation that `Type<attrs>` denotes an instance of the given type with a constraint on attributes such as shape or format.
+
+```python
+Estimator.run(Union[Iterable[ObservablesTask<shape_i>], ObservablesTask], **options) → List[ResultBundle<{evs: ndarray<shape_i>, stds: ndarray<shape_i>}>]
+```
+
+Example:
+
+```python
+circuit = QuantumCircuit # with 2039 parameters
+
+parameter_values = np.random((9, 32, 2039))
+observables = [<list of 9 different paulis>]
+job = estimator.run((circuit, parameter_values, observables))
+
+job.result()
+
+>> [ResultBundle<{evs: ndarray<9, 32>, stds: ndarray<9, 32>, metadata}>]
+
+Sampler.run(Union[Iterable[ArrayTask<shape_i], ArrayTask]) -> List[ResultBundle[{creg_name: CountsArray}]]
+```
+
+### Type Coersion Strategy
+
+To minimize the number of container types that an every-day user will need to interact with, and to make the transition more seamless, we propose that several container types be associated with a `TypeLike` pattern and a static method
+
+```python
+def coerce(argument: TypeLike) -> Type
+```
+
+that is invoked inside of the `run()` method.
+
+For example,
+
+```python
+BindingsArrayLike=Union[BindingsArray, ArrayLike, Iterable[float], Mapping[Parameter, float]]
+```
+
+and
+
+```python
+@staticmethod
+def coerce(bindings_array: BindingsArrayLike) -> BindingsArray:
+    if isinstance(bindings_array, (list, ArrayLike)):
+        bindings_array = BindingsArray(bindings_array)
+    elif isinstance(bindings_array, Mapping):
+        bindings_array = BindingsArray([], bindings_array)
+
+    return bindings_array
+```
+
+In particular, we propose this kind of coersion for the types:
+* `ArrayTask`
+* `ObservablesTask`
+* `BindingsArray`
+* `ObservablesArray`
+
 ## Detailed Design
 Technical reference level design. Elaborate on details such as:
 - Implementation procedure
