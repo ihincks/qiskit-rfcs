@@ -90,7 +90,6 @@ For the `Estimator` primitive, in order to satisfy the definition as stated abov
 
 ```python
 class ObservablesTask(NamedTuple):
-
     circuit: QuantumCircuit, 
     parameter_values: BindingsArray, 
     observables: ObservablesArray
