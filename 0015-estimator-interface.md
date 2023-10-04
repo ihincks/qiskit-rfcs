@@ -53,11 +53,34 @@ For all users, the interface changes in this proposal will enable specific primi
 
 ## Design Proposal <a name="design-proposal"></a>
 
+We use the (non-standard) notation that `Type<attrs>` denotes an instance of the given type with a constraint on attributes such as shape or format.
+
+```python
+Estimator.run(Union[Iterable[ObservablesTask<shape_i>], ObservablesTask], **options) → List[ResultBundle<{evs: ndarray<shape_i>, stds: ndarray<shape_i>}>]
+```
+
+### Example 1
+
+```python
+circuit = QuantumCircuit() 
+... # populate with 2039 parameters
+
+parameter_values = np.random((4, 32, 2039))
+observables = ["ZZIIIIIII", "IZXIIIIII", "IIIIIIYZI", "IZXIIYIII"]
+
+estimator = Estimator()
+job = estimator.run((circuit, parameter_values, observables))
+
+job.result()
+
+>> [ResultBundle<{evs: ndarray<4, 32>, stds: ndarray<4, 32>}>, metadata]
+```
+
 ### Tasks <a name="tasks"></a>
 
 In this proposal, we introduce the concept of a Task, which we define as a single circuit along with auxiliary data required to execute the circuit relative to the primitive in question. This concept is general enough that it can be used for all primitive types, current and future, where we stress that what the “auxiliary data” is can vary between primitive types. 
 
-For example, a circuit with unbound parameters (or in OQ3 terms, a circuit with inputs) alone could never qualify as a Task for any primitive because there is not enough information to execute it, namely, numeric parameter binding values. On the other hand, conceptually, a circuit with no unbound parameters (i.e. an OQ3 circuit with no inputs) alone could form a Task for a hypothetical primitive that just runs circuits and returns counts. This suggests a natural base for all Tasks:
+For example, a circuit with unbound parameters (or in OQ3 terms, a circuit with inputs) alone could never qualify as a Task for any primitive because there is not enough information to execute it, namely, numeric parameter binding values. On the other hand, conceptually, a circuit with no unbound parameters (i.e. an OQ3 circuit with no inputs) alone could form a Task for a hypothetical primitive that just runs circuits and returns counts. This suggests (using an ad-hoc annotation convention) a natural base for all Tasks:
 
 ```python
 BaseTask = NamedTuple[circuit: QuantumCircuit]
@@ -77,13 +100,20 @@ We expect the formal primitive API and primitive implementations to have a stron
 
 ### BindingsArray <a name="bindingsarray"></a>
 
-It is common for a user to want to do a sweep over parameter values, that is, to execute the same parametric circuit with many different parameter binding sets. `BindingsArray` specifies multiple sets of parameters that can be bound to a circuit. For example, if a circuit has 200 parameters, and a user wishes to execute the circuit for 50 different sets of values, then a single instance of `BindingsArray` could represent 50 sets of 200 parameter values. Moreover, it is array-like (see [ObservablesArray](#observablesarray)), so in this example the `BindingsArray` instance would be one-dimensional and have shape equal `(50,)`. 
+It is common for a user to want to do a sweep over parameter values, that is, to execute the same parametric circuit with many different parameter binding sets. `BindingsArray` is an object that specifies multiple sets of parameters that can be bound to a circuit. For example, if a circuit has 200 parameters, and a user wishes to execute the circuit for 50 different sets of values, then a single instance of `BindingsArray` could represent 50 sets of 200 parameter values. Moreover, it is array-like (see [ObservablesArray](#observablesarray)), so in this example the `BindingsArray` instance would be one-dimensional and have shape equal `(50,)`. 
 
 We expect the formal primitive API and primitive implementations to have a strong sense of `BindingsArray`, but we will not demand that users construct them manually because we do not wish to overburden them with types, and we need to remain backwards compatible. This is discussed further in the [Type Coercion Strategy](#type-coercion-strategy) and [Migration Path](#migration-path) sections.
 
 The "BindingsArray" object will support, at a minimum, the following constructor examples for a circuit with three input parameters `a`, `b`, and `c`, where we will use `<>` to denote some `array_like` of the specified shape:
 
 ```python
+# a single value for each a, b, and c; 0-dimensional, and compatible with current interface
+BindingsArray([0.0, 1.0, 2.0])
+
+# a single value for each a, b, and c; 0-dimensional, and compatible with current interface
+# satisfies user wish to be able to specify values by name
+BindingsArray(kwvals={Parameter("a"): 0.0, Parameter("b"): 1.0, Parameter("c"): 2.0})
+
 # specify all 50 binding parameter sets in one big array
 BindingsArray(<50, 3>) 
 
@@ -97,7 +127,6 @@ BindingsArray(kwargs={(a, c): <50, 2>, b: <50>})
 BindingsArray(<50, 2>, {c: <50>}) 
 ```
 
-Note that `BindingsArray` is somewhat constrained by how `Parameters` currently work in Qiskit, namely, there is no support for array-valued inputs in the same way that there is in OpenQASM 3; `BindingsArray` assumes that every parameter represents a single number like a `float` or an `int`.
 
 ### ObservablesArray <a name="observablesarray"></a>
 
@@ -157,30 +186,6 @@ FAQ1: Why make `BindingArrays` `nd`, and not just `list`-like?
 * A3: It lets us specify certain common scenarios for `ObservablesTask` more efficiently. For example, suppose we want one axis to represent twirling variates, and the other axis to represent observable bases. Then, via broadcasting, described below, the information that needs to be transferred over the wire appears 1D  for both the twirling variate phase information and the list of observables. Without `nd-array` support, broadcasting would have to be done client-side.
 
 We propose that any subtype of `ArrayTask` use broadcasting rules on auxillary data.
-
-### Primitive Interface <a name="primitive-interface"></a>
-
-We use the (non-standard) notation that `Type<attrs>` denotes an instance of the given type with a constraint on attributes such as shape or format.
-
-```python
-Estimator.run(Union[Iterable[ObservablesTask<shape_i>], ObservablesTask], **options) → List[ResultBundle<{evs: ndarray<shape_i>, stds: ndarray<shape_i>}>]
-```
-
-Example:
-
-```python
-circuit = QuantumCircuit # with 2039 parameters
-
-parameter_values = np.random((9, 32, 2039))
-observables = [<list of 9 different paulis>]
-job = estimator.run((circuit, parameter_values, observables))
-
-job.result()
-
->> [ResultBundle<{evs: ndarray<9, 32>, stds: ndarray<9, 32>}>, metadata]
-
-Sampler.run(Union[Iterable[ArrayTask<shape_i], ArrayTask]) -> List[ResultBundle[{creg_name: CountsArray}]]
-```
 
 ### Type Coercion Strategy <a name="type-coercion-strategy"></a>
 
@@ -360,7 +365,11 @@ Open questions for discussion and an opening for feedback.
 
 ## Future Extensions <a name="future-extensions"></a>
 
+### Circuit Formats
+
 In this proposal we have typed circuits as `QuantumCircuit`. It would be possible to extend this to a `CircuitLike` class which could be as simple as `Union[QuantumCircuit, str]` to explicitly allow OpenQASM3 circuits as first-class inputs.
+
+### Tasks in the base class (and other primitives)
 
 A consequence of switching to the concept of Tasks (mentioned in [Tasks](#tasks)) is that this will allow us to introduce the `.run()` method into `BasePrimitive`
 
@@ -371,4 +380,12 @@ class BasePrimitive(ABC, Generic[T]):
         ...
 ```
 
-The use of `T` as a positional argument in `BasePrimitive.run()` here will benefit from the interface changes described in the [Migration Path](#migration-path) and [Primitive Interface](#primitive-interface) sections.
+### `BindingsArray` generalizations
+
+`BindingsArray` is somewhat constrained by how `Parameters` currently work in Qiskit, namely, there is no support for array-valued inputs in the same way that there is in OpenQASM 3; `BindingsArray` assumes that every parameter represents a single number like a `float` or an `int`.
+One solution could be to extend the class to allow different sub-arrays to have extra dimensions.
+For example, for an input angle-array `input angle[15] foo;`, and for a bindings array with shape `(30, 20)`, the corresponding array could have shape `(30, 20, 1, 15)`.
+
+Another generalization is to allow broadcastable shapes inside of a single `BindingsArray`.
+For example, one could have one array with shape `(1, 4, 5)` for five parameters, and another with shape `(3, 1, 2)` for two parameters, resulting in a bindings array with shape `(3, 4)`.
+The advantage of this is allowing sparser representations of bindings arrays, and also specifying "fast" and "slow" parameters.
