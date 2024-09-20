@@ -7,6 +7,56 @@
 | **Submitted**     | YYYY-MM-DD                                   |
 
 ## Summary
+
+Objective: 
+1. Introduce a `Box` control flow operation
+2. Allow annotations
+
+### Box
+
+```python
+with circuit.box(..):
+    circuit.use(range(7)) # indicates that this box surrounds qubits 0-6
+    circuit.cx(5, 6)
+```
+
+### Annotations
+
+```python
+class MyAnnotation(TranspilerAnnotation):
+    pass
+
+
+with circuit.box(annotations=[MyAnnotation()]):
+    ..
+```
+
+### Transpilation
+
+
+### Serialization
+
+
+### Use Case: Twirling
+
+```python
+class TwirlingStrategy(TranspilerAnnotation):
+    ...
+
+    def validate_box(self, box: BoxInstruction):
+        # runs, eg, at .box() context manager exit
+
+class BoxHandle(TranspilerAnnotation):
+    ...
+
+with circuit.box(annotations=[BoxHandle("abcd"), TwirlingStrategy(..)]):
+    ...
+```
+
+=======================================================
+OLD 
+=======================================================
+
 Objective: Introduce a new `Block` instruction to enhance the user experience with Qiskit's Runtime primitives, with the goal of providing more flexibility and transparency with respect to twirling and mitigation.
 
 The concept of a block of gates is fundamental to many quantum computing routines. For example, a block is a natural concept when reasoning about quantum errors because the error profile often depends on factors such as which gates are applied simultaneously. However, Qiskit does not provide a dedicated object to represent a block. Traditionally, users have worked around this by defining blocks *indirectly* using barriers. While this approach has been adequate for tasks like scheduling and transpilation, barriers can be hard to parse when pre-processing circuits in preparation for twirling or mitigation. Suboptimal handling of barriers in these post-processing steps can introduce significant slowdowns in some mitigation experiments (for example, it can unnecessarily increase the time required by the noise learning steps) and produce outcomes that may seem unintuitive to typical users.
